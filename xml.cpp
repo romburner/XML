@@ -46,7 +46,7 @@
 **      Systems Library
 **
 **    Version:
-**      $Revision: 1.19 $
+**      $Revision: 1.20 $
 **
 **    Authors:
 **      CWR
@@ -78,7 +78,7 @@ inline static void debug(int tval, char *str)
 {
 #if _DEBUG
 	if (!tval)
-		printf("**Error on line %d: %s\n", Xml_head::head[Xml_head::headDepth]->getLine(), str);
+		printf("**Error on line %lu: %s\n", Xml_head::head[Xml_head::headDepth]->getLine(), str);
 #endif
 }
 
@@ -192,7 +192,7 @@ int Xml_node::setValue(int size, const i8 *theVal)
 	if (!msize)
 		return 0;
 	i8 *svalue = value;
-	if (value = (i8*)mAlloc(msize+1))
+	if ((value = (i8*)mAlloc(msize+1)))
 	{	if (osize)
 		{
 			memcpy(value, svalue, osize);	// move old
@@ -260,7 +260,7 @@ u64 Xml_node::hexVert(i8 *val)
 		if ((*val == 'x') || (*val == 'X'))
 			++val;
 	}
-	while (ch = *val++)
+	while ((ch = *val++))
 	{	ans <<= 4;
 		ch = hexChar(ch);
 		if (ch == -1)			// Non hex character error
@@ -507,7 +507,7 @@ int Xml_node::skipComment(i8 * &buf)
 	// count input lines here properly... FIXME FIXME FIXME!~!!!!!!
 	i8 * endo = strstr(buf, Xml_head::CMNTend);
 	if (endo)
-	{	endo += sizeof(Xml_head::CMNTend)-1;
+	{	endo += 3;//sizeof(Xml_head::CMNTend)-1;
 		buf = endo;
 		return 1;
 	}
@@ -702,7 +702,7 @@ terminate:
 			buf--;
 #ifdef _DEBUG
 		i8 buffy[256];
-		sprintf(buffy,"Field is %d bytes long, memory is %d",len,Xml_head::head[Xml_head::headDepth]->bufsize);
+		sprintf(buffy,"Field is %lu bytes long, memory is %lu",len,Xml_head::head[Xml_head::headDepth]->bufsize);
 		debug(0, buffy);
 #endif
 	}
@@ -773,7 +773,7 @@ i8 Xml_node::NextToken(i8 * &buf,i8 *tokVal,u32 maxlen,u32 &len)
 		{	NextChar(buf);
 			return '_';			// Return two char token /> as _
 		}
-		return '\\';			// Return / char as back slash
+		return 'x';			// Return / char as back slash
 	case '?':					// ?>
 		NextChar(buf);
 		tk = LookChar(buf);		// Get one lookahead character
@@ -836,13 +836,14 @@ void Xml_node::NextQuote(i8 * &buf,i8 *tokVal,u32 maxlen,i8 tokQuote,u32 &len)
 		 len++, maxlen--, tk = NextChar(buf))
 	{	 if (tk=='&' || tk=='%')
 		 {	if (gatherep(buf, tokVal, maxlen,replen))
-				if (predefs(tokVal))
+            {	if (predefs(tokVal))
 					continue;
 				else
 				{	Xml_head::inputStack[Xml_head::stackDepth++] = buf; // Save
 					buf = subfind(tokVal);
 					tk = NextChar(buf);		// Get next one
 				}
+            }
 //			else
 //				debug(0,"& used wrong -> &amp;");
 		 }
@@ -1094,7 +1095,7 @@ int Xml_node::vallist(i8 * &buf, Xml_node **bLink)
 			return 0;
 		}
 	}
-	if ((ch == '^'))
+	if (ch == '^')
 	{	buf = old;
 		return 0;
 	}
@@ -1123,7 +1124,8 @@ int Xml_node::vallist(i8 * &buf, Xml_node **bLink)
 \******************************************************************************/
 void Xml_node::parse(i8 *&buf, Xml_node **bLink, int depth)
 {
-	if (depth < 0) return; // Exit if overflow
+	if (depth < 0)
+        return; // Exit if overflow
 	i8 ch,*old;
 	u32 len; //,len1
 	Xml_node *anode, *listnode, *parsenode, *newNode = this ;
@@ -1141,12 +1143,12 @@ void Xml_node::parse(i8 *&buf, Xml_node **bLink, int depth)
 			switch (ch)
 			{
 			case '>':						// Opening a deeper context
-				newNode->parse(buf, &newNode->child,--depth);// Walk child nodes
+				newNode->parse(buf, &newNode->child,depth-1);// Walk child nodes
 				break;
 			case ' ':						// Must be an option list
 				parsenode = listnode = 0;
 				if (newNode->vallist(buf, &listnode)) // Walk child nodes
-					newNode->parse(buf, &parsenode,++depth);
+					newNode->parse(buf, &parsenode,depth-1);
 				if (listnode)
 				{
 					for (newNode->child=anode=listnode; anode->sibling; anode = anode->sibling);
@@ -1224,7 +1226,7 @@ void Xml_head::element(i8 * &buf, Xml_node **bLink)
 	{	Xml_node::WhiteSpace(buf);		// and skip trailing space
 		if (*buf == '(')				// Deeper context?
 		{	element(buf, bLink);	// Parse an element list
-			if (ch = *buf++);			// Get next char
+			if ((ch = *buf++));			// Get next char
 			else buf--;
 		}
 		else
@@ -1359,7 +1361,7 @@ char openFlag;
 	depth *= Xml_head::TabSet;				// Tab out output w/ spaces
 	memset(buf, ' ', depth);
 	outPtr = buf + depth;
-	openFlag = (flags && Xml_head::FLAGopen) ? '-' : '+';
+	openFlag = (flags & Xml_head::FLAGopen) ? '-' : '+';
 	sprintf(outPtr,"(%c) ",openFlag);
 	outPtr = outPtr + strlen(outPtr);
 	if (value)
@@ -1454,7 +1456,7 @@ u32 len;
 
 	if (!codeStr)
 		return 0;
-	if (codeEnd = strchr(codeStr, sep))	// Calc length of this field
+	if ((codeEnd = strchr(codeStr, sep)))	// Calc length of this field
 	{	len = codeEnd - codeStr;
 		codeEnd++;						// Skip separator
 	}
@@ -1730,7 +1732,7 @@ Xml_node * Xml_node::findPath(i8 *path)
 					Xml_head::head[Xml_head::headDepth]->bufsize);	// extract next name in path!
 	Xml_node *node = this;
 	xml_walk(node)								// Walk the whole node list
-	{	if (next = node->finds(Xml_head::head[Xml_head::headDepth]->getbuffer()))	// Is it on this list?
+	{	if ((next = node->finds(Xml_head::head[Xml_head::headDepth]->getbuffer())))	// Is it on this list?
 			return *path ?							// Path to look for still?
 				next->child->findPath(path) :	// Look one level deeper
 				next;
@@ -1758,7 +1760,7 @@ Xml_node * Xml_node::findPathT(i8 *path)
 			 Xml_head::head[Xml_head::headDepth]->bufsize);	// extract next name in path!
 	Xml_node *node = this;
 	xml_walk(node)								// Walk the whole node list
-	{	if (next = node->finds(Xml_head::head[Xml_head::headDepth]->getbuffer()))	// Is it on this list?
+	{	if ((next = node->finds(Xml_head::head[Xml_head::headDepth]->getbuffer())))	// Is it on this list?
 		return *path ?							// Path to look for still?
 		next->child->findPathT(path) :	// Look one level deeper
 		next;
@@ -1791,7 +1793,7 @@ Xml_node * Xml_node::findPathVal(i8 *path, i8 *value)
 					   node->sibling->findVal(pathName, value) )
    {	if (!*path)
 			return node;
-		if (next = node->child->findPathVal(path, value)) // Look one level deeper
+		if ((next = node->child->findPathVal(path, value))) // Look one level deeper
 			return next;
 	}
 	return 0;
@@ -1815,7 +1817,7 @@ Xml_node * Xml_node::findPathVal(i8 *path, i8 *value)
 Xml_node * Xml_node::set(i8 *tag, i8 *valNew)
 {
 	Xml_node *thisNode;
-	if (thisNode = finds(tag))
+	if ((thisNode = finds(tag)))
 	{	mFree(thisNode->value);
 		thisNode->setValue(strlen(valNew), valNew);
 	}
@@ -1840,7 +1842,7 @@ Xml_node * Xml_node::set(i8 *tag, i8 *valNew)
 Xml_node * Xml_node::setVal(i8 *tag, i8 *val, i8 *valNew)
 {
 	Xml_node *thisNode;
-	if (thisNode = findVal(tag, val))
+	if ((thisNode = findVal(tag, val)))
 	{	mFree(thisNode->value);
 		thisNode->setValue(strlen(valNew), valNew);
 	}
@@ -1863,7 +1865,7 @@ Xml_node * Xml_node::setVal(i8 *tag, i8 *val, i8 *valNew)
 Xml_node * Xml_node::setPath(i8 *path, i8 *valNew)
 {
 	Xml_node *thisNode;
-	if (thisNode = findPath(path))
+	if ((thisNode = findPath(path)))
 	{	mFree(thisNode->value);
 		thisNode->setValue(strlen(valNew), valNew);
 	}
@@ -1886,7 +1888,7 @@ Xml_node * Xml_node::setPath(i8 *path, i8 *valNew)
 Xml_node * Xml_node::setPathVal(i8 *path, i8 *val, i8 *valNew)
 {
 	Xml_node *thisNode;
-	if (thisNode = findPathVal(path, val))
+	if ((thisNode = findPathVal(path, val)))
 	{	mFree(thisNode->value);
 		thisNode->setValue(strlen(valNew), valNew);
 	}
@@ -2075,7 +2077,7 @@ int Xml_node::save(char *FileName)
 {
 	FILE *fid;
 	if (this && FileName)
-	{	if (fid = fOpen(FileName, (i8*)"w"))		// Open the xml file
+	{	if ((fid = fOpen(FileName, (i8*)"w")))		// Open the xml file
 		{	child->saved(fid, 0);	// Save off the data tree
 			fClose(fid);
 			return 1;
@@ -2102,7 +2104,7 @@ int Xml_node::savebin(char *FileName)
 {
 	FILE *fid;
 	if (this && FileName)
-	{	if (fid = fOpen(FileName, (i8*)"w"))		// Open the xml file
+	{	if ((fid = fOpen(FileName, (i8*)"w")))		// Open the xml file
 		{	child->savebind(fid, 0);	// Save off the data tree
 			fClose(fid);
 			return 1;
@@ -2548,10 +2550,11 @@ Xml_node * Xml_head::parse(i8 *fiddata)
 {
 	Xml_node *node = head[headDepth]->ROOT =
 	new Xml_node(strlen(STRroot)+1, STRroot,0,0);	// Save root node ptr
-	if (!node) return node;
-	header(fiddata, node->getSiblingP());			// Read the header
-	node->parse(fiddata, node->getChildP(),maxparse);// Walk the XML data tree
-	return node;									// Return the top XML node
+	if (node)
+    {   header(fiddata, node->getSiblingP());			// Read the header
+        node->parse(fiddata, node->getChildP(),maxparse);// Walk the XML data tree
+	}
+    return node;									// Return the top XML node
 }
 
 /******************************************************************************\

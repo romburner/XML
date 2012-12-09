@@ -46,26 +46,13 @@
 **      Systems Library
 **
 **    Version:
-**      $Revision: 1.4 $
+**      $Revision: 1.6 $
 **
 **    Authors:
 **      CWR
 **
 ********************************************************************************
 **    Revision History:
-**      $Log: XML2l.cpp,v $
-**      Revision 1.4  2009/06/27 15:26:22  chuck
-**      mac'inated
-**
-**      Revision 1.3  2009/06/26 20:56:25  chuck
-**      dirty
-**
-**      Revision 1.2  2007/10/17 05:37:07  chuck
-**      Fix parse errors, add more debugging messages
-**
-**      Revision 1.1.1.1  2007/04/10 07:51:59  chuck
-**      Add XML lib to vc
-**
 **
 ** $NoKeywords: $
 ********************************************************************************
@@ -85,7 +72,7 @@ static char	*makehString = 0;
 static char	*findString = 0;
 static char	basedFlag = 0;
 static u8	*basedString = 0;
-static u8	*binFile = 0;
+static i8	*binFile = 0;
 
 static int xml_bufsize = 16384;
 
@@ -116,7 +103,7 @@ options are:\n\
 \******************************************************************************/
 void showHelp(void)
 {
-	printf(helpString);
+	printf("%s",helpString);
 }
 
 /******************************************************************************\
@@ -155,10 +142,8 @@ void newExt(u8 *fileName, u8 *newExt)
 	u32 i;
 	u32 len = strlen((const char *)fileName);
 	for(i = len-1; i>0; i--)
-	{
-		if (fileName[i] == '.')
-		{
-			strcpy((char *)fileName + i + 1, (const char *)newExt);
+	{	if (fileName[i] == '.')
+		{	strcpy((char *)fileName + i + 1, (const char *)newExt);
 			return;
 		}
 	}
@@ -175,7 +160,7 @@ void newExt(u8 *fileName, u8 *newExt)
 #
 # RETURNS:
 \******************************************************************************/
-void xml_2_h(Xml_node *node, u8 *container, u8 *filename)
+void xml_2_h(Xml_node *node, i8 *container, u8 *filename)
 {
 	Xml_node *idNode, *valNode;
 	u8 *hFormat[] = {	(u8*)"#define %s %s\n",
@@ -192,12 +177,10 @@ void xml_2_h(Xml_node *node, u8 *container, u8 *filename)
 	newExt(outFile, (u8*)"h");
 	handle = fOpen((char*)outFile, (char*)"w");
 	xml_walkI(node, container)
-	{
-		idNode  = node->getChild()->finds((u8*)"id");
-		valNode = node->getChild()->finds((u8*)"val");
+	{	idNode  = node->getChild()->finds((i8*)"id");
+		valNode = node->getChild()->finds((i8*)"val");
 		if (idNode && valNode)
-		{
-			idx = 5 - strlen((const char *)idNode->getValue())/tabStop;
+		{	idx = 5 - strlen((const char *)idNode->getValue())/tabStop;
 			if (idx < 0)
 				idx = 0;
 			else if (idx > 5)
@@ -294,34 +277,28 @@ int main(int argc, char **argv)
 		showHelp();
 
 	for (; i<argc; i++)
-	{
-		char *filename = argv[i];
+	{	char *filename = argv[i];
 		if (verboseFlag)
 			printf("--- Start XML File %s\n", filename);
 		Xml_node *node = xmlHeader.read(filename);
 		if (!node)
-		{
-			if (verboseFlag)
+		{	if (verboseFlag)
 				printf("Error reading %s\n",filename);
 			continue;
 		}
 
-		Xml_node *found = basedFlag ? node->findPath((u8 *)basedString) : node->getChild();
+		Xml_node *found = basedFlag ? node->findPath((i8 *)basedString) : node->getChild();
 		if (found)
-		{
-			if (findFlag)
-			{
-				found = found->findPath((u8 *)findString);
+		{	if (findFlag)
+			{	found = found->findPath((i8 *)findString);
 				if (found)
 					printf("found '%s' = '%s'\n", findString, found->getValue());
 			}
 			if (binFlag)
-			{
-				found->savebin(binFile);
+			{	found->savebin(binFile);
 			}
 			if (makehFlag && makehString)
-			{
-				xml_2_h(found->getChild(), (u8*)makehString, (u8*)filename);
+			{	xml_2_h(found->getChild(), (i8*)makehString, (u8*)filename);
 			}
 		}
 		else
@@ -331,15 +308,13 @@ int main(int argc, char **argv)
 		}
 
 		if (dumpFlag)
-		{
-			node->getSibling()->dump(0);
+		{	node->getSibling()->dump(0);
 			if (verboseFlag)
 				printf("--- Data ----\n");
 			node->getChild()->dump(0);
 		}
 		if (printFlag)
-		{
-			node->getChild()->show(0);
+		{	node->getChild()->show(0);
 		}
 		node->release();
 		if (verboseFlag)
