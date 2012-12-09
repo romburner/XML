@@ -47,7 +47,7 @@
 **      Systems Library
 **
 **    Version:
-**      $Revision: 1.6 $   
+**      $Revision: 1.7 $   
 **
 **    Authors:
 **      CWR
@@ -55,6 +55,9 @@
 ********************************************************************************
 **    Revision History:
 **      $Log: OSMacOSX.c,v $
+**      Revision 1.7  2012/12/09 20:43:13  chuck
+**      new error
+**
 **      Revision 1.6  2010/04/02 04:03:09  chuck
 **      more jumpiness
 **
@@ -503,8 +506,8 @@ int fExists(char *fidname)
 {
 FILE *fHand;
 int retVal;
-    if (fHand = fOpen(fidname, "rb")) {
-        retVal = 1;
+    if ((fHand = fOpen(fidname, "rb")))
+    {   retVal = 1;
         fClose(fHand);
     }
     else {

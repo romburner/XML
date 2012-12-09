@@ -54,6 +54,9 @@
 ********************************************************************************
 **    Revision History:
 **      $Log: errors.h,v $
+**      Revision 1.3  2012/12/09 20:43:13  chuck
+**      new error
+**
 **      Revision 1.3  2011/07/21 05:12:55  chuck
 **      find dangler
 **
@@ -77,6 +80,7 @@ typedef enum
 	Error_Out_of_memory,
 	Error_File_not_found,
 	Error_File_read,
+    Error_Overflow,
 	Global_Error_Count
 } Errors;
 
